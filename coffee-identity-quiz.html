@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>咖啡身份认领测试 | 你是哪种咖啡人？</title>
+  <meta name="description" content="15道题测出你的咖啡人格！美式孤勇者？拿铁什么拿不住？来认领你的咖啡身份！">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
+  <style>
+    :root {
+      --coffee-darkest: #2A1A0E;
+      --coffee-dark: #3E2723;
+      --coffee-primary: #5D4037;
+      --coffee-medium: #795548;
+      --coffee-light: #A1887F;
+      --coffee-lighter: #D7CCC8;
+      --caramel: #D4A574;
+      --caramel-light: #F5CBA7;
+      --cream: #FEF9EF;
+      --white: #FFFFFF;
+      --shadow: 0 4px 20px rgba(42, 26, 14, 0.15);
+      --shadow-strong: 0 8px 32px rgba(42, 26, 14, 0.25);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --font-main: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-main);
+      background: linear-gradient(135deg, var(--coffee-darkest) 0%, var(--coffee-dark) 50%, var(--coffee-primary) 100%);
+      color: var(--cream);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    #app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+      background: linear-gradient(180deg, var(--coffee-darkest) 0%, #1A0F08 100%);
+    }
+    .header { text-align: center; padding: 24px 20px 16px; position: relative; }
+    .header-icon { font-size: 48px; display: block; margin-bottom: 8px; animation: floatBean 3s ease-in-out infinite; }
+    @keyframes floatBean { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-8px) rotate(3deg); } }
+    .header h1 { font-size: 22px; font-weight: 900; background: linear-gradient(135deg, var(--caramel) 0%, var(--caramel-light) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: 1px; }
+    .header p { font-size: 13px; color: var(--coffee-lighter); margin-top: 6px; font-weight: 300; }
+    .progress-wrap { padding: 0 20px; margin-bottom: 20px; }
+    .progress-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--caramel) 0%, var(--caramel-light) 100%); border-radius: 3px; transition: width 0.4s ease; }
+    .progress-text { text-align: right; font-size: 12px; color: var(--coffee-light); margin-top: 6px; }
+    .question-card {
+      background: rgba(255,255,255,0.06); backdrop-filter: blur(10px);
+      border: 1px solid rgba(212, 165, 116, 0.2); border-radius: var(--radius);
+      margin: 0 16px 20px; padding: 28px 20px; min-height: 320px;
+      display: flex; flex-direction: column; justify-content: center;
+      animation: fadeSlideUp 0.4s ease;
+    }
+    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .question-number { font-size: 11px; color: var(--caramel); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+    .question-text { font-size: 18px; font-weight: 700; line-height: 1.6; margin-bottom: 24px; color: var(--cream); }
+    .options { display: flex; flex-direction: column; gap: 10px; }
+    .option-btn {
+      background: rgba(255,255,255,0.05); border: 1.5px solid rgba(212, 165, 116, 0.25);
+      border-radius: var(--radius-sm); padding: 14px 16px; text-align: left;
+      font-size: 14px; font-weight: 400; color: var(--cream);
+      cursor: pointer; transition: var(--transition); line-height: 1.5; font-family: var(--font-main);
+    }
+    .option-btn:hover { background: rgba(212, 165, 116, 0.15); border-color: var(--caramel); transform: translateY(-1px); }
+    .option-btn:active { transform: translateY(0) scale(0.98); }
+    .option-btn.selected { background: rgba(212, 165, 116, 0.2); border-color: var(--caramel); font-weight: 500; }
+    .option-label {
+      display: inline-block; width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(212, 165, 116, 0.2); text-align: center; line-height: 24px;
+      font-size: 12px; font-weight: 700; color: var(--caramel); margin-right: 10px; flex-shrink: 0;
+    }
+    .option-content { display: flex; align-items: center; }
+    .nav-buttons { display: flex; gap: 12px; padding: 0 16px 32px; }
+    .nav-btn {
+      flex: 1; padding: 14px 20px; border-radius: var(--radius-sm);
+      font-size: 15px; font-weight: 700; cursor: pointer; transition: var(--transition);
+      font-family: var(--font-main); border: none;
+    }
+    .nav-btn-back { background: rgba(255,255,255,0.08); color: var(--coffee-lighter); flex: 0.6; }
+    .nav-btn-back:hover { background: rgba(255,255,255,0.15); }
+    .nav-btn-next { background: linear-gradient(135deg, var(--caramel) 0%, #C8956C 100%); color: var(--coffee-darkest); }
+    .nav-btn-next:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(212, 165, 116, 0.4); }
+    .nav-btn-next:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+    .nav-btn-start {
+      background: linear-gradient(135deg, var(--caramel) 0%, #C8956C 100%);
+      color: var(--coffee-darkest); font-size: 17px; padding: 16px 40px;
+      border-radius: 50px; border: none; font-weight: 700; cursor: pointer;
+      transition: var(--transition); font-family: var(--font-main);
+    }
+    .nav-btn-start:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(212, 165, 116, 0.5); }
+    .start-screen { text-align: center; padding: 40px 24px; animation: fadeSlideUp 0.5s ease; }
+    .start-screen .bean-icon { font-size: 80px; display: block; margin-bottom: 20px; animation: floatBean 3s ease-in-out infinite; }
+    .start-screen h2 { font-size: 26px; font-weight: 900; background: linear-gradient(135deg, var(--caramel) 0%, var(--caramel-light) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 16px; }
+    .start-screen .desc { font-size: 14px; color: var(--coffee-lighter); line-height: 1.8; margin-bottom: 32px; font-weight: 300; }
+    .start-screen .rules { background: rgba(255,255,255,0.05); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 32px; text-align: left; }
+    .start-screen .rules li { font-size: 13px; color: var(--coffee-light); line-height: 2; list-style: none; padding-left: 20px; position: relative; }
+    .start-screen .rules li::before { content: '☕'; position: absolute; left: 0; font-size: 10px; }
+    .result-screen { padding: 24px 16px 32px; animation: fadeSlideUp 0.6s ease; }
+    .result-card {
+      background: linear-gradient(135deg, rgba(212,165,116,0.15) 0%, rgba(93,64,55,0.3) 100%);
+      border: 1.5px solid rgba(212,165,116,0.3); border-radius: var(--radius);
+      padding: 32px 20px; text-align: center; margin-bottom: 24px; position: relative; overflow: hidden;
+    }
+    .result-card::before {
+      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(212,165,116,0.08) 0%, transparent 60%);
+      animation: resultGlow 4s ease-in-out infinite;
+    }
+    @keyframes resultGlow { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } }
+    .result-emoji { font-size: 64px; display: block; margin-bottom: 16px; position: relative; }
+    .result-identity {
+      font-size: 24px; font-weight: 900;
+      background: linear-gradient(135deg, var(--caramel) 0%, var(--caramel-light) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 8px; position: relative;
+    }
+    .result-tagline { font-size: 13px; color: var(--coffee-lighter); font-weight: 300; margin-bottom: 20px; position: relative; }
+    .result-desc { font-size: 14px; color: var(--cream); line-height: 1.8; text-align: left; background: rgba(0,0,0,0.2); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 16px; position: relative; }
+    .result-flavor { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; position: relative; margin-bottom: 16px; }
+    .flavor-tag { background: rgba(212,165,116,0.2); border: 1px solid rgba(212,165,116,0.3); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--caramel-light); }
+    .result-encourage { font-size: 13px; color: var(--caramel); font-weight: 500; font-style: italic; position: relative; }
+    .share-section { margin-bottom: 24px; }
+    .share-section h3 { font-size: 15px; font-weight: 700; color: var(--caramel); margin-bottom: 12px; text-align: center; }
+    .share-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .share-btn {
+      background: rgba(255,255,255,0.08); border: 1.5px solid rgba(212,165,116,0.3);
+      border-radius: var(--radius-sm); padding: 10px 16px; color: var(--cream);
+      font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition);
+      font-family: var(--font-main); display: flex; align-items: center; gap: 6px;
+    }
+    .share-btn:hover { background: rgba(212,165,116,0.2); border-color: var(--caramel); }
+    .share-btn .share-icon { font-size: 16px; }
+    .result-actions { display: flex; gap: 12px; }
+    .result-actions .nav-btn { text-align: center; }
+    #share-canvas { display: none; }
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px);
+      background: rgba(42,26,14,0.95); border: 1px solid rgba(212,165,116,0.4);
+      border-radius: var(--radius-sm); padding: 12px 24px; color: var(--caramel-light);
+      font-size: 14px; font-weight: 500; z-index: 999; transition: transform 0.3s ease; backdrop-filter: blur(10px);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    @media (max-width: 400px) {
+      .header h1 { font-size: 18px; }
+      .question-text { font-size: 16px; }
+      .result-identity { font-size: 20px; }
+    }
+    .loading-mask { position: fixed; inset: 0; background: var(--coffee-darkest); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.5s ease; }
+    .loading-mask.fade-out { opacity: 0; pointer-events: none; }
+    .loading-bean { font-size: 48px; animation: floatBean 1.5s ease-in-out infinite; }
+    .loading-text { margin-top: 16px; color: var(--caramel); font-size: 13px; letter-spacing: 2px; font-weight: 300; }
+    .share-img-preview {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none;
+      align-items: center; justify-content: center; z-index: 9999; padding: 20px;
+    }
+    .share-img-preview.show { display: flex; }
+    .share-img-preview img { max-width: 100%; max-height: 80vh; border-radius: var(--radius); box-shadow: var(--shadow-strong); }
+    .share-img-preview .close-btn { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+    .share-img-preview .download-btn {
+      position: absolute; bottom: 40px;
+      background: linear-gradient(135deg, var(--caramel) 0%, #C8956C 100%);
+      border: none; color: var(--coffee-darkest); padding: 12px 32px; border-radius: 50px;
+      font-size: 15px; font-weight: 700; cursor: pointer; font-family: var(--font-main);
+    }
+    .url-share-box { background: rgba(255,255,255,0.05); border-radius: var(--radius-sm); padding: 12px 16px; margin-top: 12px; word-break: break-all; font-size: 12px; color: var(--coffee-light); border: 1px solid rgba(212,165,116,0.2); }
+  </style>
+</head>
+<body>
+  <div class="loading-mask" id="loading-mask">
+    <div class="loading-bean">☕</div>
+    <div class="loading-text">正在研磨...</div>
+  </div>
+
+  <div id="app">
+    <div class="header">
+      <span class="header-icon">☕</span>
+      <h1>咖啡身份认领测试</h1>
+      <p>15道题，测出你是哪种咖啡人</p>
+    </div>
+    <div class="progress-wrap" id="progress-wrap" style="display:none;">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-text" id="progress-text"></div>
+    </div>
+    <div id="content"></div>
+    <div class="nav-buttons" id="nav-buttons" style="display:none;"></div>
+  </div>
+
+  <div class="share-img-preview" id="share-preview">
+    <button class="close-btn" onclick="closeSharePreview()">&times;</button>
+    <img id="share-preview-img" src="" alt="分享图">
+    <button class="download-btn" onclick="downloadShareImg()">保存图片</button>
+  </div>
+
+  <canvas id="share-canvas" width="750" height="1000" style="display:none;"></canvas>
+  <div class="toast" id="toast"></div>
+
+<script>
+// ===== Questions =====
+const questions = [
+  {
+    q: "早上起床，你离了咖啡活不了，第一杯一般几点喝？",
+    options: [
+      { text: "睁眼就冲，刷牙前已经美式到位", ids: ["americano_loner"] },
+      { text: "到公司第一件事，打卡+冲咖啡同步进行", ids: ["americano_loner", "morning_zombie"] },
+      { text: "不急，上午慢悠悠来一杯拿铁，配个早餐", ids: ["latte_anything"] },
+      { text: "周末才喝，工作日？矿泉水谢谢", ids: ["coffee_fortune_teller"] }
+    ]
+  },
+  {
+    q: "你喝咖啡加糖吗？",
+    options: [
+      { text: "加糖？那还叫喝咖啡吗", ids: ["espresso_essence"] },
+      { text: "偶尔加，但要有仪式感地慢慢品", ids: ["pourover_philosopher"] },
+      { text: "必须加，不甜不喝", ids: ["mocha_sweetie", "caramel_princess"] },
+      { text: "看心情，今天苦明天甜", ids: ["espresso_debater"] }
+    ]
+  },
+  {
+    q: "你一般在哪里喝咖啡？",
+    options: [
+      { text: "公司工位，一天坐到晚", ids: ["americano_loner", "ice_americano_survivor"] },
+      { text: "专门探店，每周至少3家新咖啡馆", ids: ["cafe_vagrant_poet"] },
+      { text: "家里沙发，穿着睡衣慢慢喝", ids: ["pourover_philosopher"] },
+      { text: "随身携带，走路喝、坐车喝、开会也喝", ids: ["ice_americano_survivor"] }
+    ]
+  },
+  {
+    q: "你喝的都是什么温度的咖啡？",
+    options: [
+      { text: "只喝冰的，热咖啡是什么上古生物", ids: ["ice_americano_survivor"] },
+      { text: "热饮派，冬天捧着杯子才有感觉", ids: ["latte_anything"] },
+      { text: "都行，主要看心情和天气", ids: ["coffee_fortune_teller"] },
+      { text: "冷萃屯一冰箱，随取随喝", ids: ["coldbrew_hoarder"] }
+    ]
+  },
+  {
+    q: "你对咖啡豆产地有研究吗？",
+    options: [
+      { text: "必须研究，巴拿马瑰夏和埃塞俄比亚耶加雪菲区别能讲一小时", ids: ["geisha_snob"] },
+      { text: "知道一点，但主要还是看口味", ids: ["pourover_philosopher"] },
+      { text: "云南小粒也很香，支持国货", ids: ["yunnan_ambassador"] },
+      { text: "豆子？咖啡粉不行吗", ids: ["morning_zombie"] }
+    ]
+  },
+  {
+    q: "你喝拿铁/奶咖吗？",
+    options: [
+      { text: "拿铁是我本命，万物皆可拿铁", ids: ["latte_anything"] },
+      { text: "燕麦拿铁，乳糖不耐受但绝不认输", ids: ["oat_latte_believer"] },
+      { text: "偶尔喝，主要还是美式", ids: ["americano_loner"] },
+      { text: "奶泡打得比人生还厚，我就是要奶味", ids: ["milk_napoleon"] }
+    ]
+  },
+  {
+    q: "你买咖啡豆/咖啡粉的习惯是？",
+    options: [
+      { text: "买了一堆，开了一包，其他在柜子里吃灰", ids: ["bean_collector"] },
+      { text: "只买贵的，性价比是什么", ids: ["geisha_snob"] },
+      { text: "随便买，能喝就行", ids: ["espresso_essence"] },
+      { text: "自带挂耳，省钱又体面", ids: ["yunnan_ambassador"] }
+    ]
+  },
+  {
+    q: "咖啡对你来说意味着什么？",
+    options: [
+      { text: "续命，没有咖啡下午怎么活", ids: ["ice_americano_survivor"] },
+      { text: "生活仪式感，慢慢享受", ids: ["pourover_philosopher"] },
+      { text: "社交工具，约人见面就喝咖啡", ids: ["cafe_vagrant_poet"] },
+      { text: "占卜工具，今天喝什么咖啡代表今天运势", ids: ["coffee_fortune_teller"] }
+    ]
+  },
+  {
+    q: "你能接受多苦的咖啡？",
+    options: [
+      { text: "浓缩shots一口闷，苦是灵魂", ids: ["espresso_essence"] },
+      { text: "中深烘可以，但太焦的不行", ids: ["espresso_debater"] },
+      { text: "必须加奶，纯黑咖啡接受不了", ids: ["milk_napoleon"] },
+      { text: "摩卡走起，巧克力味才是咖啡", ids: ["mocha_sweetie"] }
+    ]
+  },
+  {
+    q: "你喝过最贵的咖啡是多少钱一杯？",
+    options: [
+      { text: "50以上，喝的是产地和故事", ids: ["geisha_snob"] },
+      { text: "30左右，偶尔奢侈一下", ids: ["flatwhite_cool"] },
+      { text: "20以内，瑞幸/库迪常客", ids: ["ice_americano_survivor"] },
+      { text: "自带挂耳，省钱又体面", ids: ["yunnan_ambassador"] }
+    ]
+  },
+  {
+    q: "你的咖啡器具到了什么级别？",
+    options: [
+      { text: "虹吸壶、手冲架、电子秤、温度计，煮咖啡像炼丹", ids: ["siphon_ritual_master"] },
+      { text: "一个法压壶或手冲杯，够用了", ids: ["pourover_philosopher"] },
+      { text: "速溶+杯子，简单粗暴", ids: ["morning_zombie"] },
+      { text: "买了很多，用得很少，主要用来拍照", ids: ["bean_collector"] }
+    ]
+  },
+  {
+    q: "你对季节限定咖啡怎么看？",
+    options: [
+      { text: "秋天不喝桂花拿铁，秋天有什么意义", ids: ["seasonal_hunter"] },
+      { text: "还行，出新品会试试", ids: ["cafe_vagrant_poet"] },
+      { text: "都是营销，味道没差多少", ids: ["espresso_debater"] },
+      { text: "不知道有这回事", ids: ["coffee_fortune_teller"] }
+    ]
+  },
+  {
+    q: "你会在朋友圈/小红书晒咖啡吗？",
+    options: [
+      { text: "每周必晒，打卡比上班还勤", ids: ["cafe_vagrant_poet"] },
+      { text: "偶尔晒，好看的才晒", ids: ["bean_collector"] },
+      { text: "不晒，喝了就喝了", ids: ["americano_loner"] },
+      { text: "晒，但主要晒杯子/器具，咖啡是配角", ids: ["siphon_ritual_master"] }
+    ]
+  },
+  {
+    q: "你喝flat white吗？",
+    options: [
+      { text: "超爱，不说美式不说拿铁，flat white才有格调", ids: ["flatwhite_cool"] },
+      { text: "喝过，但觉得就是小杯拿铁", ids: ["espresso_debater"] },
+      { text: "没听过，这是什么", ids: ["morning_zombie"] },
+      { text: "燕麦flat white，乳糖不耐受进阶版", ids: ["oat_latte_believer"] }
+    ]
+  },
+  {
+    q: "如果咖啡从世界上消失了，你会？",
+    options: [
+      { text: "崩溃，第二天就去找替代品", ids: ["ice_americano_survivor"] },
+      { text: "遗憾，但茶也可以", ids: ["pourover_philosopher"] },
+      { text: "无所谓，本来就不常喝", ids: ["coffee_fortune_teller"] },
+      { text: "终于可以省钱了，但还是会想念", ids: ["yunnan_ambassador"] }
+    ]
+  }
+];
+
+// ===== Identities =====
+const identities = {
+  americano_loner: {
+    name: "美式孤勇者",
+    emoji: "\u2615",
+    tagline: "什么都不加，就硬喝",
+    desc: "你是一个纯粹的咖啡原教旨主义者。美式是你与这个世界对话的方式。有人觉得你活得苦，其实你只是不需要任何修饰——就像你的人生哲学：直接、纯粹、有效。你的办公桌上永远有一杯美式，凉了也没关系，因为下一杯已经在路上了。",
+    flavors: ["纯粹", "直接", "高效", "原教旨"],
+    encourage: "要想甜，加点盐——但你对咖啡的执着，不需要任何加法。继续做你自己吧，世界需要你这样不妥协的人。☕"
+  },
+  latte_anything: {
+    name: "拿铁什么拿不住",
+    emoji: "\uD83E\uDDE6",
+    tagline: "奶咖派，万物皆可拿铁",
+    desc: "拿铁是你对这个世界最大的温柔。你相信任何苦涩的东西，只要加足够的奶，都能变得可以接受——就像你对生活中那些不完美的事，总能找到温和的解决方式。你不是软弱，你只是选择了更圆润的方式与世界相处。",
+    flavors: ["温柔", "圆润", "包容", "奶香"],
+    encourage: "你的温柔是这个世界的缓冲垫。继续用你的方式，让周围的人感到舒服吧——当然，偶尔也可以来一杯浓缩，证明自己还在。\uD83D\uDE04"
+  },
+  espresso_essence: {
+    name: "浓缩精华型选手",
+    emoji: "\u2694\uFE0F",
+    tagline: "一口入魂，时间暂停",
+    desc: "你是一个追求极致效率的人。浓缩咖啡对你来说不只是饮料，是一种生活态度：在最短的时间里获取最大的能量。你不喜欢拖泥带水，就像你不喜欢的咖啡里加太多水。你的座右铭是：less is more，但more is also good。",
+    flavors: ["浓缩", "高效", "直接", "强悍"],
+    encourage: "浓缩是你的哲学，但记得：人生偶尔也需要加点水，慢慢品。不过说实话，你这种人通常都挺厉害的——继续保持吧！\uD83D\uDCAA"
+  },
+  pourover_philosopher: {
+    name: "手冲哲学家",
+    emoji: "\u2615\uFE0F",
+    tagline: "看着滤杯发呆，人生慢了下来",
+    desc: "你是一个活在慢节奏里的人。手冲对你来说不是泡咖啡，是一种冥想。你喜欢看着水慢慢透过咖啡粉，就像你看时间慢慢流过手指。你的朋友觉得你活得太佛系，但你清楚：快有什么用？香气的层次你都没品出来呢。",
+    flavors: ["慢活", "仪式感", "层次", "禅意"],
+    encourage: "这个世界太快了，幸好还有你这样的人愿意慢下来。继续保持你的节奏吧——不过有时候，冰美式也挺省时间的，要不要试试？\uD83D\uDE09"
+  },
+  milk_napoleon: {
+    name: "奶味拿破仑",
+    emoji: "\uD83C\uDF7C",
+    tagline: "奶泡打得比人生还厚",
+    desc: "你对奶的需求已经超越了生理学范畴，进入了哲学领域。拿铁、卡布奇诺、flat white——你觉得咖啡只是一个载体，真正的灵魂是奶。有人嘲笑你喝的是奶不是咖啡，你笑了笑，搅拌了一下杯子里的拿铁，心想：你们不懂。",
+    flavors: ["奶香", "浓郁", "倔强", "气泡感"],
+    encourage: "奶味拿破仑，这个称号你当之无愧！不用理会那些黑咖啡原教旨主义者——毕竟，没有奶的咖啡，就像没有配菜的牛排，总觉得少了点什么。继续奶起来！\uD83E\uDDE6"
+  },
+  geisha_snob: {
+    name: "高加索也爱瑰夏",
+    emoji: "\uD83C\uDF7A\uFE0F",
+    tagline: "贵的就是好的，但真香",
+    desc: "你对咖啡的品味就像你对生活的品味：挑剔、精致、不轻易妥协。瑰夏是你眼中的白月光，喝一口就能品出海拔、处理法和产区——你不是为了装，你是真的能喝出来。你的钱包在哭泣，但你的味蕾在跳舞。",
+    flavors: ["精致", "挑剔", "优雅", "不差钱"],
+    encourage: "喝贵的咖啡不会让你更厉害，但会让你更快乐——这就够了。继续追求品质吧，只是偶尔也试试云南小粒，说不定会有惊喜呢～\uD83C\uDF7A\uFE0F"
+  },
+  ice_americano_survivor: {
+    name: "冰美式续命侠",
+    emoji: "\uD83E\uDD7A",
+    tagline: "没有冰美式，下午怎么活",
+    desc: "你是现代职场生存大师。冰美式对你来说不是饮料，是生命维持装置。上午一杯，下午一杯，晚上如果还要加班，再来一杯。你觉得热咖啡是上古生物喝的，只有冰的才是人类文明的正确答案。你的血管里流淌的已经不是血液，是冰美式。",
+    flavors: ["续命", "高效", "冰凉", "职场生存"],
+    encourage: "冰美式续命侠，向你致敬！不过提醒一下：晚上喝可能会影响睡眠哦～当然，对你来说，睡不睡得着已经不重要了，重要的是把活干完。加油，打工人！\uD83D\uDCBC"
+  },
+  oat_latte_believer: {
+    name: "燕麦拿铁信徒",
+    emoji: "\uD83C\uDF3E",
+    tagline: "乳糖不耐受但绝不认输",
+    desc: "你是当代咖啡进化论的完美证明：乳糖不耐受并不能阻止你热爱奶咖。燕麦拿铁是你的救赎，植物奶是你的信仰。你觉得燕麦奶有一种特殊的清甜，甚至比牛奶更好喝——当然，你主要是因为喝了牛奶会胀气，但这个不重要。",
+    flavors: ["植物基", "倔强", "清甜", "进化"],
+    encourage: "燕麦拿铁信徒，你的肠道感谢你！植物奶不仅是乳糖不耐受的救星，也是地球的福音。一边喝咖啡一边拯救地球，你就是当代最酷的咖啡人。\uD83C\uDF3E"
+  },
+  mocha_sweetie: {
+    name: "摩卡小甜甜",
+    emoji: "\uD83C\uDF6B",
+    tagline: "咖啡？那是巧克力味的",
+    desc: "你对咖啡的理解是：如果有巧克力味，那就算是咖啡了。摩卡是你的最爱，因为有巧克力。拿铁也可以，但最好有点焦糖。你不是不能接受苦咖啡，只是你真心觉得：为什么要让自己难受呢？人生已经够苦了。",
+    flavors: ["甜", "巧克力", "温柔", "快乐"],
+    encourage: "摩卡小甜甜，你的生活哲学我赞同！咖啡本来就应该让人快乐，不是让人受苦。继续甜下去吧——不过偶尔试试看美式，说不定会发现新世界？当然，不试也没关系！\uD83D\uDE04"
+  },
+  flatwhite_cool: {
+    name: "flat white装酷犯",
+    emoji: "\uD83D\uDE0E",
+    tagline: "不说美式不说拿铁，非要flat white",
+    desc: "你说flat white的时候，语调里有一种微妙的优越感——不是故意的，是自然而然的。你去咖啡馆不会说\"来杯拿铁\"，你会说\"给我一杯flat white，double ristretto，燕麦奶\"。你觉得自己在装酷，但说实话，你确实挺酷的。",
+    flavors: ["装酷", "微妙的优越感", "精致", "酷"],
+    encourage: "flat white装酷犯，我懂你。其实叫什么不重要，重要的是你喝得开心。不过下次可以试试直接说\"来杯拿铁\"——你会发现，世界并不会崩塌。\uD83D\uDE0E"
+  },
+  coldbrew_hoarder: {
+    name: "冷萃囤货狂魔",
+    emoji: "\uD83C\uDF66",
+    tagline: "一买就是半打，冰箱专门腾一格",
+    desc: "你的冰箱里有一个专门的格子，放着冷萃咖啡。不是一瓶，是半打。你享受打开冰箱就有冷萃喝的感觉，就像有些人享受打开衣柜有很多衣服的感觉。你的朋友说你囤货成瘾，你反驳说这叫\"战略储备\"。",
+    flavors: ["囤货", "战略储备", "冰箱管理", "效率"],
+    encourage: "冷萃囤货狂魔，你的冰箱管理技能值得学习！不过友情提醒：冷萃也是有保质期的～在它过期之前喝完，才是对咖啡最大的尊重。☕"
+  },
+  cafe_vagrant_poet: {
+    name: "咖啡馆流浪诗人",
+    emoji: "\uD83C\uDF7C",
+    tagline: "每周探店，打卡比上班还勤",
+    desc: "你是城市咖啡馆的活地图。每一家新开的咖啡馆你都知道，每一家老店的隐藏菜单你也了如指掌。你喝咖啡不只是喝咖啡，你在收集故事。你的社交媒体上全是咖啡馆的照片，配文总是很有格调——虽然你承认有时候是为了拍照才去的。",
+    flavors: ["探店", "故事收集", "格调", "流浪"],
+    encourage: "咖啡馆流浪诗人，你的生活比小说还有趣！继续探索吧，只是提醒一下：有些小店的咖啡可能真的不太好喝——但那又怎样，环境好看就行了，对吧？\uD83D\uDE04"
+  },
+  caramel_princess: {
+    name: "焦糖玛奇朵小公主",
+    emoji: "\uD83D\uDC78",
+    tagline: "不甜不喝，这是底线",
+    desc: "你对甜度有执着的追求。焦糖玛奇朵是你的最爱，因为它够甜、够香、够华丽。你觉得生活已经够苦了，喝杯咖啡还要喝苦的，那活着还有什么意义？你的朋友说你喝的是甜品不是咖啡，你翻了个白眼：你懂什么，这叫生活品质。",
+    flavors: ["甜品级", "华丽", "不妥协", "生活品质"],
+    encourage: "焦糖玛奇朵小公主，你的甜蜜哲学值得尊重！人生苦短，为什么要喝甜的？继续做你的甜蜜公主吧——只是记得刷刷牙，别让糖分偷偷带走你的笑容。\uD83D\uDE01"
+  },
+  yunnan_ambassador: {
+    name: "云南小粒代言人",
+    emoji: "\uD83C\uDF3F",
+    tagline: "支持国货，味道还贼好",
+    desc: "你是咖啡界的国货支持者。当别人都在聊瑰夏和蓝山的时候，你会说：你们试过云南小粒吗？不比进口的差。你不是买不起贵的，你只是觉得支持国产很有必要。你的立场让你在咖啡圈显得格外特别——有点倔强，但很可爱。",
+    flavors: ["国货", "倔强", "实惠", "特别"],
+    encourage: "云南小粒代言人，为你点赞！支持国货是一件很酷的事，而且说实话，云南咖啡真的越来越好了。继续代言下去吧——顺便帮我们推荐一下普洱和保山！\uD83C\uDF3F"
+  },
+  siphon_ritual_master: {
+    name: "虹吸仪式感大师",
+    emoji: "\uD83C\uDF2E",
+    tagline: "煮个咖啡搞得像炼丹",
+    desc: "你煮一杯咖啡的时间，别人已经喝完三杯了。但你不急，因为对你来说，喝咖啡的重点不是喝，是煮。虹吸壶、酒精灯、计时器——你的咖啡角看起来像化学实验室。你的朋友说你装，你淡然一笑：你们不懂，这叫仪式感。",
+    flavors: ["仪式感", "慢", "炼丹", "实验室风格"],
+    encourage: "虹吸仪式感大师，你的咖啡仪式感已经超越了咖啡本身。继续炼丹吧——只是记得，有时候简单的手冲也很香，不用每次都搞得像化学实验。不过，谁在乎呢？你开心就好！\uD83D\uDE04"
+  },
+  espresso_debater: {
+    name: "意式浓缩辩论家",
+    emoji: "\uD83D\uDDE3\uFE0F",
+    tagline: "与其说喝咖啡，不如说在辩论",
+    desc: "你喝咖啡的过程，总伴随着一场辩论：这家店的美式算不算正宗？那个产区的豆子处理法对不对？你不是故意抬杠，你只是对咖啡有很！多！想！法！你的朋友有时候觉得你累不累啊，但你觉得：喝咖啡不讨论，那跟喝白开水有什么区别？",
+    flavors: ["辩论", "想法多", "较真", "热情"],
+    encourage: "意式浓缩辩论家，你的热情让人佩服！只是有时候，放下执念，单纯喝一杯——说不定会有意外的惊喜。当然，继续辩论也挺好的，咖啡圈需要你这样的人！☕\uD83D\uDE04"
+  },
+  bean_collector: {
+    name: "咖啡豆收藏家",
+    emoji: "\uD83D\uDCDA",
+    tagline: "买得多、开得少、晒图第一",
+    desc: "你的柜子里有20包咖啡豆，但打开的只有2包。你买咖啡豆的主要动力是：拍照发朋友圈。你不坏，你只是享受拥有它们的感觉。你的朋友说你浪费，你反驳说这叫\"收藏\"——就像有人收藏球鞋，有人收藏手办，你收藏咖啡豆，有什么问题？",
+    flavors: ["收藏", "晒图", "拥有感", "佛系"],
+    encourage: "咖啡豆收藏家，你的柜子一定很好看！只是友情提醒：咖啡豆是有保质期的～在它们失去风味之前，不如打开一包试试？当然，不打开也挺好看的，就当装饰品吧！\uD83D\uDE09"
+  },
+  morning_zombie: {
+    name: "早晨美式行尸走肉",
+    emoji: "\uD83E\uDDE6",
+    tagline: "第一口之前，请勿与我交谈",
+    desc: "你的人生被清晰地划分为两个阶段：喝咖啡前，和喝咖啡后。喝咖啡前的你是一具行尸走肉，眼神空洞、反应迟钝、不建议与人类交流。喝咖啡后的你才是真正的人类。你的同事都知道：上午10点之前不要跟你说工作，除非他们想看到一张面瘫脸。",
+    flavors: ["行尸走肉", "面瘫", "咖啡因依赖", "早晨恐惧症"],
+    encourage: "早晨美式行尸走肉，我懂你。第一口咖啡之前的你，是需要被保护的濒危物种。不过提醒一下：多喝水，别让咖啡把你榨干了～当然，这句话你每天早上都听，然后继续喝三杯。加油，僵尸同仁！\uD83E\uDDE6"
+  },
+  seasonal_hunter: {
+    name: "季节限定猎人",
+    emoji: "\uD83C\uDF42\uFE0F",
+    tagline: "秋天不喝桂花拿铁，秋天有什么意义",
+    desc: "你是季节限定的忠实猎人。春天要喝樱花拿铁，夏天要喝桃子的，秋天不喝桂花拿铁秋天有什么意义，冬天要喝太妃糖的。你觉得咖啡馆的季节限定是你的日历——没有这些限定款，你都不知道现在是哪个季节。",
+    flavors: ["季节感", "限定控", "仪式感", "不买难受"],
+    encourage: "季节限定猎人，你的生活比日历还准时！继续追限定吧——只是有时候，普通的美式也很香。当然，这句话你说得对：秋天不喝桂花拿铁，秋天确实没意义。干杯！\uD83C\uDF42\uFE0F"
+  },
+  coffee_fortune_teller: {
+    name: "咖啡占卜师",
+    emoji: "\uD83D\uDCDE",
+    tagline: "喝个咖啡能分析出今天运势",
+    desc: "你喝咖啡的时候，总能从中品出今天运势的端倪。咖啡太苦=今天可能有小挫折，咖啡刚好=今天平淡但安稳，咖啡特别香=今天会有好事发生。你的朋友觉得你在扯，但你坚信：咖啡是会说话的，只是大多数人听不到。",
+    flavors: ["玄学", "感性", "咖啡占卜", "听得到咖啡说话"],
+    encourage: "咖啡占卜师，你的感性是天赋！继续从咖啡中读取宇宙的信号吧——只是有时候，咖啡太苦可能只是烘焙度的问题，不是今天会倒霉。不过，谁说玄学不能和咖啡共存呢？\uD83D\uDCDE"
+  }
+};
+
+// ===== State =====
+let currentQ = 0;
+let answers = [];
+let resultId = null;
+
+// ===== Init =====
+function init() {
+  try {
+    var hash = window.location.hash;
+    if (hash && hash.startsWith("#result=")) {
+      var sharedId = hash.replace("#result=", "");
+      if (identities[sharedId]) {
+        showResult(sharedId, true);
+        setTimeout(function() {
+          var mask = document.getElementById("loading-mask");
+          if (mask) mask.classList.add("fade-out");
+        }, 500);
+        return;
+      }
+    }
+    setTimeout(function() {
+      var mask = document.getElementById("loading-mask");
+      if (mask) mask.classList.add("fade-out");
+      setTimeout(function() {
+        var mask2 = document.getElementById("loading-mask");
+        if (mask2) mask2.style.display = "none";
+        showStartScreen();
+      }, 600);
+    }, 1000);
+  } catch(e) {
+    // fallback: hide loading mask and show start screen
+    var mask = document.getElementById("loading-mask");
+    if (mask) mask.style.display = "none";
+    showStartScreen();
+  }
+}
+
+// ===== Start Screen =====
+function showStartScreen() {
+  currentQ = 0;
+  answers = [];
+  resultId = null;
+  var progressWrap = document.getElementById("progress-wrap");
+  if (progressWrap) progressWrap.style.display = "none";
+  var navButtons = document.getElementById("nav-buttons");
+  if (navButtons) navButtons.style.display = "none";
+  document.getElementById("content").innerHTML =
+    '<div class="start-screen">' +
+    '<span class="bean-icon">\u2615</span>' +
+    '<h2>测测你是哪种<br>"咖啡人"？</h2>' +
+    '<p class="desc">15道有趣的选择题<br>认领你的专属咖啡身份<br>测完可以生成分享卡片哦～</p>' +
+    '<div class="rules">' +
+      '<li>共 15 道题，每题选择最符合你的选项</li>' +
+      '<li>不需要登录，点开就能测</li>' +
+      '<li>测完生成专属咖啡身份卡</li>' +
+      '<li>支持分享给朋友一起测</li>' +
+    '</div>' +
+    '<button class="nav-btn-start" onclick="startQuiz()">开始测试 \u2615</button>' +
+    '</div>';
+}
+
+function startQuiz() {
+  var progressWrap = document.getElementById("progress-wrap");
+  if (progressWrap) progressWrap.style.display = "";
+  var navButtons = document.getElementById("nav-buttons");
+  if (navButtons) navButtons.style.display = "";
+  showQuestion(0);
+}
+
+// ===== Question =====
+function showQuestion(idx) {
+  currentQ = idx;
+  var q = questions[idx];
+  var progress = ((idx) / questions.length * 100).toFixed(0);
+  var fill = document.getElementById("progress-fill");
+  if (fill) fill.style.width = progress + "%";
+  var text = document.getElementById("progress-text");
+  if (text) text.textContent = (idx + 1) + " / " + questions.length;
+
+  var selected = answers[idx] !== undefined;
+  var html = '<div class="question-card">' +
+    '<div class="question-number">QUESTION ' + (idx + 1) + '</div>' +
+    '<div class="question-text">' + q.q + '</div>' +
+    '<div class="options">';
+  for (var i = 0; i < q.options.length; i++) {
+    var opt = q.options[i];
+    var isSelected = answers[idx] === i;
+    html += '<button class="option-btn' + (isSelected ? ' selected' : '') + '" onclick="selectOption(' + idx + ',' + i + ')">' +
+      '<div class="option-content">' +
+        '<span class="option-label">' + String.fromCharCode(65 + i) + '</span>' +
+        '<span>' + opt.text + '</span>' +
+      '</div>' +
+      '</button>';
+  }
+  html += '</div></div>';
+  document.getElementById("content").innerHTML = html;
+  renderNav(idx, selected);
+}
+
+function selectOption(qIdx, optIdx) {
+  answers[qIdx] = optIdx;
+  showQuestion(qIdx);
+}
+
+function renderNav(idx, hasSelected) {
+  var isFirst = idx === 0;
+  var isLast = idx === questions.length - 1;
+  var html = "";
+  if (!isFirst) {
+    html += '<button class="nav-btn nav-btn-back" onclick="showQuestion(' + (idx - 1) + ')">\u2190 上一题</button>';
+  } else {
+    html += '<div style="flex:0.6;"></div>';
+  }
+  if (!isLast) {
+    html += '<button class="nav-btn nav-btn-next" onclick="showQuestion(' + (idx + 1) + ')"' + (hasSelected ? '' : ' disabled') + '>下一题 \u2192</button>';
+  } else {
+    html += '<button class="nav-btn nav-btn-next" onclick="calculateResult()"' + (hasSelected ? '' : ' disabled') + '>\u2728 查看结果</button>';
+  }
+  document.getElementById("nav-buttons").innerHTML = html;
+}
+
+// ===== Calculate Result =====
+function calculateResult() {
+  var scores = {};
+  for (var i = 0; i < answers.length; i++) {
+    var optIdx = answers[i];
+    if (optIdx === undefined) continue;
+    var ids = questions[i].options[optIdx].ids;
+    for (var j = 0; j < ids.length; j++) {
+      var id = ids[j];
+      scores[id] = (scores[id] || 0) + 1;
+    }
+  }
+  var topId = null;
+  var topScore = -1;
+  var keys = Object.keys(scores);
+  for (var k = 0; k < keys.length; k++) {
+    var key = keys[k];
+    if (scores[key] > topScore) {
+      topScore = scores[key];
+      topId = key;
+    }
+  }
+  if (!topId) {
+    keys = Object.keys(identities);
+    topId = keys[Math.floor(Math.random() * keys.length)];
+  }
+  showResult(topId, false);
+}
+
+// ===== Show Result =====
+function showResult(id, fromHash) {
+  resultId = id;
+  var identity = identities[id];
+  var progressWrap = document.getElementById("progress-wrap");
+  if (progressWrap) progressWrap.style.display = "none";
+  var navButtons = document.getElementById("nav-buttons");
+  if (navButtons) navButtons.style.display = "none";
+
+  var shareUrl = window.location.origin + window.location.pathname + "#result=" + id;
+
+  var html = '<div class="result-screen">' +
+    '<div class="result-card" id="result-card">' +
+      '<span class="result-emoji">' + identity.emoji + '</span>' +
+      '<div class="result-identity">' + identity.name + '</div>' +
+      '<div class="result-tagline">' + identity.tagline + '</div>' +
+      '<div class="result-desc">' + identity.desc + '</div>' +
+      '<div class="result-flavor">';
+  for (var i = 0; i < identity.flavors.length; i++) {
+    html += '<span class="flavor-tag">' + identity.flavors[i] + '</span>';
+  }
+  html += '</div>' +
+      '<div class="result-encourage">' + identity.encourage + '</div>' +
+    '</div>' +
+
+    '<div class="share-section">' +
+      '<h3>\uD83D\uDCD4 分享你的咖啡身份</h3>' +
+      '<div class="share-buttons">' +
+        '<button class="share-btn" onclick="generateShareImage()">' +
+          '<span class="share-icon">\uD83D\uDCC8</span> 生成分享图' +
+        '</button>' +
+        '<button class="share-btn" onclick="copyShareLink()">' +
+          '<span class="share-icon">\uD83D\uDD17</span> 复制分享链接' +
+        '</button>' +
+        '<button class="share-btn" onclick="copyShareText()">' +
+          '<span class="share-icon">\uD83D\uDCCB</span> 复制文案' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="result-actions">' +
+      '<button class="nav-btn nav-btn-back" onclick="showStartScreen()" style="flex:1;">重新测试</button>' +
+      '<button class="nav-btn nav-btn-next" onclick="shareToFriend()" style="flex:1;">分享给朋友</button>' +
+    '</div>' +
+  '</div>';
+
+  document.getElementById("content").innerHTML = html;
+
+  // Update URL hash
+  if (!fromHash) {
+    window.location.hash = "result=" + id;
+  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ===== Share: Generate Image =====
+function generateShareImage() {
+  var identity = identities[resultId];
+  var canvas = document.getElementById("share-canvas");
+  if (!canvas) return;
+  var ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  // Background
+  var grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, "#2A1A0E");
+  grad.addColorStop(0.5, "#3E2723");
+  grad.addColorStop(1, "#5D4037");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Decorative circle
+  ctx.globalAlpha = 0.08;
+  ctx.beginPath();
+  ctx.arc(600, 200, 200, 0, Math.PI * 2);
+  ctx.fillStyle = "#D4A574";
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Title
+  ctx.fillStyle = "#D4A574";
+  ctx.font = "bold 20px 'Noto Sans SC', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("我的咖啡身份是", canvas.width / 2, 80);
+
+  // Emoji
+  ctx.font = "80px serif";
+  ctx.fillText(identity.emoji, canvas.width / 2, 200);
+
+  // Identity Name
+  ctx.fillStyle = "#F5CBA7";
+  ctx.font = "bold 36px 'Noto Sans SC', sans-serif";
+  ctx.fillText(identity.name, canvas.width / 2, 280);
+
+  // Tagline
+  ctx.fillStyle = "#D7CCC8";
+  ctx.font = "18px 'Noto Sans SC', sans-serif";
+  ctx.fillText(identity.tagline, canvas.width / 2, 330);
+
+  // Divider
+  ctx.strokeStyle = "rgba(212, 165, 116, 0.4)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(100, 370);
+  ctx.lineTo(650, 370);
+  ctx.stroke();
+
+  // Description - word wrap
+  ctx.fillStyle = "#FEF9EF";
+  ctx.font = "15px 'Noto Sans SC', sans-serif";
+  var descLines = wrapText(ctx, identity.desc, 80, 420, 590);
+  for (var i = 0; i < descLines.length; i++) {
+    ctx.fillText(descLines[i], canvas.width / 2, 420 + i * 26);
+  }
+
+  // Flavor tags
+  ctx.font = "14px 'Noto Sans SC', sans-serif";
+  var tagText = identity.flavors.join("  \u00B7  ");
+  ctx.fillStyle = "#D4A574";
+  ctx.fillText(tagText, canvas.width / 2, 420 + descLines.length * 26 + 40);
+
+  // Encourage
+  ctx.fillStyle = "#D4A574";
+  ctx.font = "italic 14px 'Noto Sans SC', sans-serif";
+  var encLines = wrapText(ctx, identity.encourage, 100, 420 + descLines.length * 26 + 80, 550);
+  for (var i2 = 0; i2 < encLines.length; i2++) {
+    ctx.fillText(encLines[i2], canvas.width / 2, 420 + descLines.length * 26 + 80 + i2 * 24);
+  }
+
+  // Footer
+  ctx.fillStyle = "rgba(215, 204, 200, 0.6)";
+  ctx.font = "13px 'Noto Sans SC', sans-serif";
+  ctx.fillText("\u2615 咖啡身份认领测试 \u00B7 来测测你的咖啡人格吧", canvas.width / 2, canvas.height - 50);
+
+  // Show preview
+  var dataUrl = canvas.toDataURL("image/png");
+  var previewImg = document.getElementById("share-preview-img");
+  if (previewImg) previewImg.src = dataUrl;
+  var preview = document.getElementById("share-preview");
+  if (preview) preview.classList.add("show");
+}
+
+function wrapText(ctx, text, x, y, maxWidth) {
+  var lines = [];
+  var line = "";
+  for (var i = 0; i < text.length; i++) {
+    var testLine = line + text[i];
+    var metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && line.length > 0) {
+      lines.push(line);
+      line = text[i];
+    } else {
+      line = testLine;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function closeSharePreview() {
+  var preview = document.getElementById("share-preview");
+  if (preview) preview.classList.remove("show");
+}
+
+function downloadShareImg() {
+  var canvas = document.getElementById("share-canvas");
+  if (!canvas) return;
+  var link = document.createElement("a");
+  link.download = "我的咖啡身份_" + resultId + ".png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+  showToast("\u56FE\u7247\u5DF2\u4FDD\u5B58\uFF01\u5FEB\u53BB\u53D1\u670B\u53CB\u5708\u5427 \u2615");
+}
+
+// ===== Share: Copy Link =====
+function copyShareLink() {
+  var shareUrl = window.location.origin + window.location.pathname + "#result=" + resultId;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(shareUrl).then(function() {
+      showToast("\u94FE\u63A5\u5DF2\u590D\u5236\u5230\u526A\u8D34\u677F\uFF01\u5FEB\u53BB\u5206\u4EAB\u5427 \uD83D\uDD17");
+    }).catch(function() {
+      fallbackCopy(shareUrl);
+    });
+  } else {
+    fallbackCopy(shareUrl);
+  }
+}
+
+function fallbackCopy(text) {
+  var input = document.createElement("input");
+  input.value = text;
+  document.body.appendChild(input);
+  input.select();
+  document.execCommand("copy");
+  document.body.removeChild(input);
+  showToast("\u94FE\u63A5\u5DF2\u590D\u5236\uFF01\u5FEB\u53BB\u5206\u4EAB\u5427 \uD83D\uDD17");
+}
+
+// ===== Share: Copy Text =====
+function copyShareText() {
+  var identity = identities[resultId];
+  var text = "\u2615 \u6211\u7684\u5496\u5561\u8EAB\u4EFD\u662F\uFF1A\u3010" + identity.name + "\u3011\n\u300C" + identity.tagline + "\u300D\n\n\u6765\u6D4B\u6D4B\u4F60\u7684\u5496\u5561\u4EBA\u683C\u5427\uFF01";
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showToast("\u6587\u6848\u5DF2\u590D\u5236\uFF01\u5FEB\u53BB\u53D1\u670B\u53CB\u5708\u5427 \uD83D\uDCCB");
+    }).catch(function() {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+// ===== Share: Share to Friend =====
+function shareToFriend() {
+  var identity = identities[resultId];
+  var shareUrl = window.location.origin + window.location.pathname + "#result=" + resultId;
+  var text = "\u2615 \u6211\u7684\u5496\u5561\u8EAB\u4EFD\u662F\uFF1A\u3010" + identity.name + "\u3011\u2014\u2014" + identity.tagline + "\uFF01\u6765\u6D4B\u6D4B\u4F60\u7684\u5496\u5561\u4EBA\u683C\u5427\uFF01" + shareUrl;
+  if (navigator.share) {
+    navigator.share({
+      title: "\u5496\u5561\u8EAB\u4EFD\u8BA4\u9886\u6D4B\u8BD5",
+      text: text,
+      url: shareUrl
+    }).catch(function() {});
+  } else {
+    copyShareLink();
+  }
+}
+
+// ===== Toast =====
+function showToast(msg) {
+  var toast = document.getElementById("toast");
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(function() { toast.classList.remove("show"); }, 2500);
+}
+
+// ===== Start =====
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>

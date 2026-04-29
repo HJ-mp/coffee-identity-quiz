@@ -162,11 +162,22 @@
     .share-img-preview.show { display: flex; }
     .share-img-preview img { max-width: 100%; max-height: 80vh; border-radius: var(--radius); box-shadow: var(--shadow-strong); }
     .share-img-preview .close-btn { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; }
-    .share-img-preview .download-btn {
-      position: absolute; bottom: 40px;
-      background: linear-gradient(135deg, var(--caramel) 0%, #C8956C 100%);
-      border: none; color: var(--coffee-darkest); padding: 12px 32px; border-radius: 50px;
-      font-size: 15px; font-weight: 700; cursor: pointer; font-family: var(--font-main);
+    .share-img-preview .save-tip {
+      position: absolute;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(212, 165, 116, 0.95);
+      color: var(--coffee-darkest);
+      padding: 12px 28px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      white-space: nowrap;
+      z-index: 10;
     }
     .url-share-box { background: rgba(255,255,255,0.05); border-radius: var(--radius-sm); padding: 12px 16px; margin-top: 12px; word-break: break-all; font-size: 12px; color: var(--coffee-light); border: 1px solid rgba(212,165,116,0.2); }
   </style>
@@ -191,10 +202,10 @@
     <div class="nav-buttons" id="nav-buttons" style="display:none;"></div>
   </div>
 
-  <div class="share-img-preview" id="share-preview">
+    <div class="share-img-preview" id="share-preview">
     <button class="close-btn" onclick="closeSharePreview()">&times;</button>
     <img id="share-preview-img" src="" alt="分享图">
-    <button class="download-btn" onclick="downloadShareImg()">保存图片</button>
+    <div class="save-tip" id="save-tip">长按图片，保存到相册</div>
   </div>
 
   <canvas id="share-canvas" width="750" height="1000" style="display:none;"></canvas>
@@ -788,12 +799,22 @@ function generateShareImage() {
   ctx.font = "13px 'Noto Sans SC', sans-serif";
   ctx.fillText("\u2615 咖啡身份认领测试 \u00B7 来测测你的咖啡人格吧", canvas.width / 2, canvas.height - 50);
 
-  // Show preview
-  var dataUrl = canvas.toDataURL("image/png");
-  var previewImg = document.getElementById("share-preview-img");
-  if (previewImg) previewImg.src = dataUrl;
-  var preview = document.getElementById("share-preview");
-  if (preview) preview.classList.add("show");
+  // Show preview - 使用 toBlob + createObjectURL（避免手机端处理超长Base64失败）
+  canvas.toBlob(function(blob) {
+    if (!blob) {
+      showToast("生成分享图失败，请重试");
+      return;
+    }
+    var url = URL.createObjectURL(blob);
+    var previewImg = document.getElementById("share-preview-img");
+    if (previewImg) {
+      previewImg.src = url;
+      // 保存 URL 引用，关闭弹窗时释放
+      previewImg.dataset.blobUrl = url;
+    }
+    var preview = document.getElementById("share-preview");
+    if (preview) preview.classList.add("show");
+  }, "image/png");
 }
 
 function wrapText(ctx, text, x, y, maxWidth) {
@@ -816,16 +837,86 @@ function wrapText(ctx, text, x, y, maxWidth) {
 function closeSharePreview() {
   var preview = document.getElementById("share-preview");
   if (preview) preview.classList.remove("show");
+  
+  // 释放 Blob URL，避免内存泄漏
+  var previewImg = document.getElementById("share-preview-img");
+  if (previewImg) {
+    if (previewImg.dataset.blobUrl) {
+      URL.revokeObjectURL(previewImg.dataset.blobUrl);
+      previewImg.dataset.blobUrl = "";
+    }
+  }
 }
 
 function downloadShareImg() {
   var canvas = document.getElementById("share-canvas");
-  if (!canvas) return;
-  var link = document.createElement("a");
-  link.download = "我的咖啡身份_" + resultId + ".png";
-  link.href = canvas.toDataURL("image/png");
-  link.click();
-  showToast("\u56FE\u7247\u5DF2\u4FDD\u5B58\uFF01\u5FEB\u53BB\u53D1\u670B\u53CB\u5708\u5427 \u2615");
+  if (!canvas) {
+    showToast("未找到分享图，请先生成分享图");
+    return;
+  }
+  
+  // 检测是否微信浏览器
+  var isWechat = /MicroMessenger/i.test(navigator.userAgent);
+  
+  canvas.toBlob(function(blob) {
+    if (!blob) {
+      showToast("生成图片失败，请重试");
+      return;
+    }
+    
+    var url = URL.createObjectURL(blob);
+    
+    if (isWechat) {
+      // 微信浏览器：无法直接触发下载，提示用户长按保存
+      // 确保图片已显示在弹窗中
+      var previewImg = document.getElementById("share-preview-img");
+      if (previewImg && !previewImg.src) {
+        previewImg.src = url;
+      }
+      
+      // 显示明显的提示
+      var tip = document.getElementById("save-tip");
+      if (tip) {
+        tip.textContent = "👆 长按上方图片，选择【保存到相册】";
+        tip.style.display = "block";
+      }
+      
+      // 确保弹窗已显示
+      var preview = document.getElementById("share-preview");
+      if (preview && !preview.classList.contains("show")) {
+        preview.classList.add("show");
+      }
+      
+      showToast("请长按图片保存");
+      
+      // 延迟释放 URL（保持图片显示）
+      setTimeout(function() {
+        // 不立即释放，等用户保存后再释放
+        // 在 closeSharePreview() 中释放
+      }, 100);
+      
+      return;
+    }
+    
+    // 非微信浏览器：尝试触发下载
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = "我的咖啡身份_" + resultId + ".png";
+    link.style.display = "none";
+    
+    document.body.appendChild(link);
+    link.click();
+    
+    // 延迟移除链接并释放 URL
+    setTimeout(function() {
+      if (link.parentNode) {
+        document.body.removeChild(link);
+      }
+      URL.revokeObjectURL(url);
+    }, 100);
+    
+    showToast("图片已保存！快去发朋友圈吧 ☕");
+  }, "image/png");
 }
 
 // ===== Share: Copy Link =====

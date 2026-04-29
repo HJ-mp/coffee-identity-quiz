@@ -223,6 +223,50 @@
       user-select: auto !important;
     }
   </style>
+<script>
+// ImgBB API Key (用于上传分享图，获取真实HTTPS地址)
+var IMGBB_API_KEY = "0e4f18a7a128252639908ded51f8e2b5";
+var IMGBB_API_URL = "https://api.imgbb.com/1/upload";
+
+// 上传图片到 ImgBB，返回真实 HTTPS 地址
+function uploadToImgBB(blob, callback) {
+  var reader = new FileReader();
+  reader.onloadend = function() {
+    var base64data = reader.result.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
+    
+    var formData = new FormData();
+    formData.append("key", IMGBB_API_KEY);
+    formData.append("image", base64data);
+    
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", IMGBB_API_URL, true);
+    
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        try {
+          var result = JSON.parse(xhr.responseText);
+          if (result.success && result.data && result.data.url) {
+            callback(true, result.data.url, result.data.display_url);
+          } else {
+            callback(false, null, null);
+          }
+        } catch(e) {
+          callback(false, null, null);
+        }
+      } else {
+        callback(false, null, null);
+      }
+    };
+    
+    xhr.onerror = function() {
+      callback(false, null, null);
+    };
+    
+    xhr.send(formData);
+  };
+  reader.readAsDataURL(blob);
+}
+</script>
 </head>
 <body>
   <div class="loading-mask" id="loading-mask">
@@ -843,45 +887,74 @@ function generateShareImage() {
   ctx.font = "13px 'Noto Sans SC', sans-serif";
   ctx.fillText("\u2615 咖啡身份认领测试 \u00B7 来测测你的咖啡人格吧", canvas.width / 2, canvas.height - 50);
 
-  // Show preview - 使用 toBlob + createObjectURL（避免手机端处理超长Base64失败）
+  // Show preview - 上传到 ImgBB 获取真实 HTTPS 地址（微信可保存）
+  showToast("正在生成分享图...");
+  
   canvas.toBlob(function(blob) {
     if (!blob) {
       showToast("生成分享图失败，请重试");
       return;
     }
-    var url = URL.createObjectURL(blob);
+    
+    // 先显示一个本地预览（上传需要时间）
+    var localUrl = URL.createObjectURL(blob);
     var previewImg = document.getElementById("share-preview-img");
     if (previewImg) {
-      previewImg.src = url;
-      // 保存 URL 引用，关闭弹窗时释放
-      previewImg.dataset.blobUrl = url;
+      previewImg.src = localUrl;
+      previewImg.dataset.blobUrl = localUrl;
     }
     var preview = document.getElementById("share-preview");
     if (preview) preview.classList.add("show");
     
-    // 检测是否微信浏览器，显示对应提示和按钮
-    var isWechat = /MicroMessenger/i.test(navigator.userAgent);
-    var tip = document.getElementById("save-tip");
-    var saveBtn = document.getElementById("save-btn");
-    var openBrowserBtn = document.getElementById("open-browser-btn");
-    
-    if (isWechat) {
-      // 微信浏览器：提示截图保存，隐藏保存按钮，显示"在浏览器中打开"按钮
-      if (tip) {
-        tip.textContent = "📱 截图保存，或点在浏览器中打开";
-        tip.style.display = "block";
+    // 上传到 ImgBB 获取真实 HTTPS 地址
+    uploadToImgBB(blob, function(success, imgUrl, displayUrl) {
+      if (success && imgUrl) {
+        // 上传成功：使用真实 HTTPS 地址
+        if (previewImg) {
+          previewImg.src = imgUrl;
+          previewImg.dataset.imgUrl = imgUrl;  // 保存真实地址
+          // 释放本地 URL
+          if (previewImg.dataset.blobUrl) {
+            URL.revokeObjectURL(previewImg.dataset.blobUrl);
+            previewImg.dataset.blobUrl = "";
+          }
+        }
+        showToast("分享图已生成！可长按保存");
+      } else {
+        // 上传失败：使用本地 URL，提示截图保存
+        showToast("分享图已生成！（可截图保存）");
       }
-      if (saveBtn) saveBtn.style.display = "none";
-      if (openBrowserBtn) openBrowserBtn.style.display = "block";
-    } else {
-      // 非微信浏览器：提示可以保存，显示保存按钮
-      if (tip) {
-        tip.textContent = "点击按钮保存，或长按图片保存";
-        tip.style.display = "block";
+      
+      // 根据浏览器类型显示对应提示
+      var isWechat = /MicroMessenger/i.test(navigator.userAgent);
+      var tip = document.getElementById("save-tip");
+      var saveBtn = document.getElementById("save-btn");
+      var openBrowserBtn = document.getElementById("open-browser-btn");
+      
+      if (isWechat) {
+        // 微信浏览器
+        if (tip) {
+          if (success && imgUrl) {
+            tip.textContent = "👆 长按图片，选择【保存到相册】";
+          } else {
+            tip.textContent = "📱 截图保存，或点在浏览器中打开";
+          }
+          tip.style.display = "block";
+        }
+        if (saveBtn) saveBtn.style.display = "none";
+        if (openBrowserBtn) {
+          openBrowserBtn.style.display = success && imgUrl ? "none" : "block";
+        }
+      } else {
+        // 非微信浏览器
+        if (tip) {
+          tip.textContent = "点击按钮保存，或长按图片保存";
+          tip.style.display = "block";
+        }
+        if (saveBtn) saveBtn.style.display = "block";
+        if (openBrowserBtn) openBrowserBtn.style.display = "none";
       }
-      if (saveBtn) saveBtn.style.display = "block";
-      if (openBrowserBtn) openBrowserBtn.style.display = "none";
-    }
+    });
   }, "image/png");
 }
 
@@ -917,14 +990,39 @@ function closeSharePreview() {
 }
 
 function downloadShareImg() {
-  // 优先使用已生成的 Blob URL（避免重复生成）
   var previewImg = document.getElementById("share-preview-img");
-  var existingUrl = previewImg ? previewImg.dataset.blobUrl : null;
+  
+  // 优先使用 ImgBB 的真实 HTTPS 地址（微信可长按保存）
+  var imgUrl = previewImg ? previewImg.dataset.imgUrl : null;
+  var blobUrl = previewImg ? previewImg.dataset.blobUrl : null;
+  
+  // 检测是否微信浏览器
+  var isWechat = /MicroMessenger/i.test(navigator.userAgent);
+  
+  if (isWechat) {
+    // ========== 微信浏览器：引导用户长按保存 ==========
+    if (imgUrl) {
+      // 有真实 HTTPS 地址：长按保存应该可用
+      showToast("👆 长按图片，选择【保存到相册】");
+      // 确保图片显示的是真实 HTTPS 地址
+      if (previewImg && previewImg.src !== imgUrl) {
+        previewImg.src = imgUrl;
+      }
+    } else {
+      // 无真实地址：提示截图保存或在浏览器中打开
+      showToast("请截图保存，或点在浏览器中打开");
+      var openBtn = document.getElementById("open-browser-btn");
+      if (openBtn) {
+        openBtn.style.display = "block";
+      }
+    }
+    return;
+  }
   
   // ========== 非微信浏览器：尝试触发下载 ==========
-  function doDownload(blobUrl) {
+  function doDownload(url, isBlob) {
     var link = document.createElement("a");
-    link.href = blobUrl;
+    link.href = url;
     link.download = "我的咖啡身份_" + (resultId || "unknown") + ".png";
     link.style.display = "none";
     link.target = "_blank";  // 某些浏览器需要
@@ -946,18 +1044,21 @@ function downloadShareImg() {
       if (link.parentNode) {
         try { document.body.removeChild(link); } catch(e) {}
       }
-      // 如果是新生成的 URL（不是复用的），释放它
-      if (blobUrl !== existingUrl) {
-        URL.revokeObjectURL(blobUrl);
+      // 如果是 Blob URL，释放它
+      if (isBlob && url.startsWith("blob:")) {
+        URL.revokeObjectURL(url);
       }
     }, 1000);
     
     showToast("图片已保存！快去发朋友圈吧 ☕");
   }
   
-  if (existingUrl) {
-    // 复用已生成的 URL
-    doDownload(existingUrl);
+  if (imgUrl) {
+    // 优先使用 ImgBB 的真实 HTTPS 地址
+    doDownload(imgUrl, false);
+  } else if (blobUrl) {
+    // 复用已生成的 Blob URL
+    doDownload(blobUrl, true);
   } else {
     // 新生成 Blob
     var canvas = document.getElementById("share-canvas");
@@ -980,7 +1081,7 @@ function downloadShareImg() {
         previewImg.dataset.blobUrl = url;
       }
       
-      doDownload(url);
+      doDownload(url, true);
     }, "image/png");
   }
 }

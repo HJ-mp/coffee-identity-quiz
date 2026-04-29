@@ -247,15 +247,9 @@
     <div class="share-img-preview" id="share-preview">
     <button class="close-btn" onclick="closeSharePreview()">&times;</button>
     <img id="share-preview-img" src="" alt="分享图">
-    <div class="save-tip" id="save-tip">长按图片，保存到相册</div>
-    <div class="wechat-save-help" id="wechat-help" style="display:none;">
-      <div class="help-title">⚠️ 微信浏览器保存失败？</div>
-      <div class="help-steps">
-        <p>方法1：<strong>截图保存</strong>（最可靠）</p>
-        <p>方法2：长按图片 → <strong>发送给朋友</strong> → 在聊天中长按保存</p>
-        <p>方法3：<a href="" id="open-external">在浏览器中打开</a> → 保存图片</p>
-      </div>
-    </div>
+    <div class="save-tip" id="save-tip">截图保存，或长按图片试试</div>
+    <button class="download-btn" id="save-btn" onclick="downloadShareImg()">保存图片</button>
+    <button class="download-btn" id="open-browser-btn" style="display:none;" onclick="openInBrowser()">在浏览器中打开</button>
   </div>
 
   <canvas id="share-canvas" width="750" height="1000" style="display:none;"></canvas>
@@ -865,39 +859,28 @@ function generateShareImage() {
     var preview = document.getElementById("share-preview");
     if (preview) preview.classList.add("show");
     
-    // 检测是否微信浏览器，显示对应提示
+    // 检测是否微信浏览器，显示对应提示和按钮
     var isWechat = /MicroMessenger/i.test(navigator.userAgent);
     var tip = document.getElementById("save-tip");
-    var help = document.getElementById("wechat-help");
-    var openExternalLink = document.getElementById("open-external");
+    var saveBtn = document.getElementById("save-btn");
+    var openBrowserBtn = document.getElementById("open-browser-btn");
     
     if (isWechat) {
-      // 微信浏览器：显示帮助提示
+      // 微信浏览器：提示截图保存，隐藏保存按钮，显示"在浏览器中打开"按钮
       if (tip) {
-        tip.textContent = "👆 长按图片尝试保存";
+        tip.textContent = "📱 截图保存，或点在浏览器中打开";
         tip.style.display = "block";
       }
-      if (help) {
-        help.style.display = "block";
-        // 设置"在浏览器中打开"链接
-        if (openExternalLink) {
-          openExternalLink.href = window.location.href;
-          openExternalLink.target = "_blank";
-          openExternalLink.onclick = function(e) {
-            e.preventDefault();
-            showToast("请点击右上角 ⋯ → 在浏览器中打开");
-          };
-        }
-      }
+      if (saveBtn) saveBtn.style.display = "none";
+      if (openBrowserBtn) openBrowserBtn.style.display = "block";
     } else {
-      // 非微信浏览器：显示保存提示
+      // 非微信浏览器：提示可以保存，显示保存按钮
       if (tip) {
         tip.textContent = "点击按钮保存，或长按图片保存";
         tip.style.display = "block";
       }
-      if (help) {
-        help.style.display = "none";
-      }
+      if (saveBtn) saveBtn.style.display = "block";
+      if (openBrowserBtn) openBrowserBtn.style.display = "none";
     }
   }, "image/png");
 }
@@ -937,33 +920,6 @@ function downloadShareImg() {
   // 优先使用已生成的 Blob URL（避免重复生成）
   var previewImg = document.getElementById("share-preview-img");
   var existingUrl = previewImg ? previewImg.dataset.blobUrl : null;
-  
-  // 检测是否微信浏览器
-  var isWechat = /MicroMessenger/i.test(navigator.userAgent);
-  
-  if (isWechat) {
-    // ========== 微信浏览器：引导用户长按保存 ==========
-    // 确保弹窗已显示
-    var preview = document.getElementById("share-preview");
-    if (preview && !preview.classList.contains("show")) {
-      preview.classList.add("show");
-    }
-    
-    // 确保图片已加载
-    if (previewImg && !previewImg.src && existingUrl) {
-      previewImg.src = existingUrl;
-    }
-    
-    // 显示明显提示
-    var tip = document.getElementById("save-tip");
-    if (tip) {
-      tip.textContent = "👆 长按上方图片，选择【保存到相册】";
-      tip.style.display = "block";
-    }
-    
-    showToast("请长按图片，选择保存到相册");
-    return;
-  }
   
   // ========== 非微信浏览器：尝试触发下载 ==========
   function doDownload(blobUrl) {
@@ -1027,6 +983,11 @@ function downloadShareImg() {
       doDownload(url);
     }, "image/png");
   }
+}
+
+// 在浏览器中打开（微信浏览器中无法保存时，引导用户使用此功能）
+function openInBrowser() {
+  showToast("请点击右上角 ⋯ → 在浏览器中打开");
 }
 
 // ===== Share: Copy Link =====

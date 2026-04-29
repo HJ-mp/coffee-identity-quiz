@@ -213,6 +213,15 @@
       text-decoration: underline;
       cursor: pointer;
     }
+    
+    /* 允许微信长按保存图片，不改动任何样式 */
+    * {
+      -webkit-touch-callout: default !important;
+    }
+    body {
+      -webkit-user-select: auto !important;
+      user-select: auto !important;
+    }
   </style>
 </head>
 <body>

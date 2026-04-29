@@ -814,6 +814,19 @@ function generateShareImage() {
     }
     var preview = document.getElementById("share-preview");
     if (preview) preview.classList.add("show");
+    
+    // 检测是否微信浏览器，显示对应提示
+    var isWechat = /MicroMessenger/i.test(navigator.userAgent);
+    var tip = document.getElementById("save-tip");
+    if (tip) {
+      if (isWechat) {
+        tip.textContent = "👆 长按上方图片，选择【保存到相册】";
+        tip.style.display = "block";
+      } else {
+        tip.textContent = "点击按钮保存，或长按图片保存";
+        tip.style.display = "block";
+      }
+    }
   }, "image/png");
 }
 
@@ -849,74 +862,99 @@ function closeSharePreview() {
 }
 
 function downloadShareImg() {
-  var canvas = document.getElementById("share-canvas");
-  if (!canvas) {
-    showToast("未找到分享图，请先生成分享图");
-    return;
-  }
+  // 优先使用已生成的 Blob URL（避免重复生成）
+  var previewImg = document.getElementById("share-preview-img");
+  var existingUrl = previewImg ? previewImg.dataset.blobUrl : null;
   
   // 检测是否微信浏览器
   var isWechat = /MicroMessenger/i.test(navigator.userAgent);
   
-  canvas.toBlob(function(blob) {
-    if (!blob) {
-      showToast("生成图片失败，请重试");
-      return;
+  if (isWechat) {
+    // ========== 微信浏览器：引导用户长按保存 ==========
+    // 确保弹窗已显示
+    var preview = document.getElementById("share-preview");
+    if (preview && !preview.classList.contains("show")) {
+      preview.classList.add("show");
     }
     
-    var url = URL.createObjectURL(blob);
-    
-    if (isWechat) {
-      // 微信浏览器：无法直接触发下载，提示用户长按保存
-      // 确保图片已显示在弹窗中
-      var previewImg = document.getElementById("share-preview-img");
-      if (previewImg && !previewImg.src) {
-        previewImg.src = url;
-      }
-      
-      // 显示明显的提示
-      var tip = document.getElementById("save-tip");
-      if (tip) {
-        tip.textContent = "👆 长按上方图片，选择【保存到相册】";
-        tip.style.display = "block";
-      }
-      
-      // 确保弹窗已显示
-      var preview = document.getElementById("share-preview");
-      if (preview && !preview.classList.contains("show")) {
-        preview.classList.add("show");
-      }
-      
-      showToast("请长按图片保存");
-      
-      // 延迟释放 URL（保持图片显示）
-      setTimeout(function() {
-        // 不立即释放，等用户保存后再释放
-        // 在 closeSharePreview() 中释放
-      }, 100);
-      
-      return;
+    // 确保图片已加载
+    if (previewImg && !previewImg.src && existingUrl) {
+      previewImg.src = existingUrl;
     }
     
-    // 非微信浏览器：尝试触发下载
+    // 显示明显提示
+    var tip = document.getElementById("save-tip");
+    if (tip) {
+      tip.textContent = "👆 长按上方图片，选择【保存到相册】";
+      tip.style.display = "block";
+    }
+    
+    showToast("请长按图片，选择保存到相册");
+    return;
+  }
+  
+  // ========== 非微信浏览器：尝试触发下载 ==========
+  function doDownload(blobUrl) {
     var link = document.createElement("a");
-    link.href = url;
-    link.download = "我的咖啡身份_" + resultId + ".png";
+    link.href = blobUrl;
+    link.download = "我的咖啡身份_" + (resultId || "unknown") + ".png";
     link.style.display = "none";
+    link.target = "_blank";  // 某些浏览器需要
     
     document.body.appendChild(link);
-    link.click();
     
-    // 延迟移除链接并释放 URL
+    // 兼容更多浏览器
+    if (link.click) {
+      link.click();
+    } else {
+      // Fallback：手动触发事件
+      var evt = document.createEvent("MouseEvents");
+      evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+      link.dispatchEvent(evt);
+    }
+    
+    // 延迟移除并释放
     setTimeout(function() {
       if (link.parentNode) {
-        document.body.removeChild(link);
+        try { document.body.removeChild(link); } catch(e) {}
       }
-      URL.revokeObjectURL(url);
-    }, 100);
+      // 如果是新生成的 URL（不是复用的），释放它
+      if (blobUrl !== existingUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    }, 1000);
     
     showToast("图片已保存！快去发朋友圈吧 ☕");
-  }, "image/png");
+  }
+  
+  if (existingUrl) {
+    // 复用已生成的 URL
+    doDownload(existingUrl);
+  } else {
+    // 新生成 Blob
+    var canvas = document.getElementById("share-canvas");
+    if (!canvas) {
+      showToast("未找到分享图，请先生成分享图");
+      return;
+    }
+    
+    canvas.toBlob(function(blob) {
+      if (!blob) {
+        showToast("生成图片失败，请重试");
+        return;
+      }
+      
+      var url = URL.createObjectURL(blob);
+      
+      // 保存引用
+      if (previewImg) {
+        previewImg.src = url;
+        previewImg.dataset.blobUrl = url;
+      }
+      
+      doDownload(url);
+    }, "image/png");
+  }
 }
 
 // ===== Share: Copy Link =====

@@ -180,6 +180,39 @@
       z-index: 10;
     }
     .url-share-box { background: rgba(255,255,255,0.05); border-radius: var(--radius-sm); padding: 12px 16px; margin-top: 12px; word-break: break-all; font-size: 12px; color: var(--coffee-light); border: 1px solid rgba(212,165,116,0.2); }
+    
+    /* 微信保存帮助提示 */
+    .wechat-save-help {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(42, 26, 14, 0.95);
+      border: 1px solid rgba(212, 165, 116, 0.4);
+      border-radius: 12px;
+      padding: 16px 20px;
+      width: 85%;
+      max-width: 340px;
+      color: var(--cream);
+      font-size: 13px;
+      line-height: 1.8;
+      z-index: 20;
+      backdrop-filter: blur(10px);
+    }
+    .wechat-save-help .help-title {
+      color: #FFA726;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .wechat-save-help .help-steps p {
+      margin: 6px 0;
+    }
+    .wechat-save-help a {
+      color: var(--caramel);
+      text-decoration: underline;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -206,6 +239,14 @@
     <button class="close-btn" onclick="closeSharePreview()">&times;</button>
     <img id="share-preview-img" src="" alt="分享图">
     <div class="save-tip" id="save-tip">长按图片，保存到相册</div>
+    <div class="wechat-save-help" id="wechat-help" style="display:none;">
+      <div class="help-title">⚠️ 微信浏览器保存失败？</div>
+      <div class="help-steps">
+        <p>方法1：<strong>截图保存</strong>（最可靠）</p>
+        <p>方法2：长按图片 → <strong>发送给朋友</strong> → 在聊天中长按保存</p>
+        <p>方法3：<a href="" id="open-external">在浏览器中打开</a> → 保存图片</p>
+      </div>
+    </div>
   </div>
 
   <canvas id="share-canvas" width="750" height="1000" style="display:none;"></canvas>
@@ -818,13 +859,35 @@ function generateShareImage() {
     // 检测是否微信浏览器，显示对应提示
     var isWechat = /MicroMessenger/i.test(navigator.userAgent);
     var tip = document.getElementById("save-tip");
-    if (tip) {
-      if (isWechat) {
-        tip.textContent = "👆 长按上方图片，选择【保存到相册】";
+    var help = document.getElementById("wechat-help");
+    var openExternalLink = document.getElementById("open-external");
+    
+    if (isWechat) {
+      // 微信浏览器：显示帮助提示
+      if (tip) {
+        tip.textContent = "👆 长按图片尝试保存";
         tip.style.display = "block";
-      } else {
+      }
+      if (help) {
+        help.style.display = "block";
+        // 设置"在浏览器中打开"链接
+        if (openExternalLink) {
+          openExternalLink.href = window.location.href;
+          openExternalLink.target = "_blank";
+          openExternalLink.onclick = function(e) {
+            e.preventDefault();
+            showToast("请点击右上角 ⋯ → 在浏览器中打开");
+          };
+        }
+      }
+    } else {
+      // 非微信浏览器：显示保存提示
+      if (tip) {
         tip.textContent = "点击按钮保存，或长按图片保存";
         tip.style.display = "block";
+      }
+      if (help) {
+        help.style.display = "none";
       }
     }
   }, "image/png");
